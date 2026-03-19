@@ -25,3 +25,9 @@
 "TBTimer.onRestStart.skip.title" = "건너뛰기";
 "TBTimer.onRestFinish.title" = "휴식 시간 종료";
 "TBTimer.onRestFinish.body" = "다시 작업을 시작하세요!";
+"TBPopoverView.pause.label" = "일시 정지";
+"TBPopoverView.resume.label" = "계속";
+"TBPopoverView.skipRest.label" = "휴식 건너뛰기";
+"SettingsView.countUpTimer.label" = "정방향 타이머";
+"SoundsView.builtIn.label" = "기본 제공";
+"SoundsView.resetSound.label" = "초기화";

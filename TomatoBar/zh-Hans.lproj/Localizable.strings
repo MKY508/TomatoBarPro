@@ -25,3 +25,9 @@
 "TBTimer.onRestStart.skip.title" = "跳过";
 "TBTimer.onRestFinish.title" = "休息结束";
 "TBTimer.onRestFinish.body" = "继续努力!";
+"TBPopoverView.pause.label" = "暂停";
+"TBPopoverView.resume.label" = "继续";
+"TBPopoverView.skipRest.label" = "跳过休息";
+"SettingsView.countUpTimer.label" = "正计时";
+"SoundsView.builtIn.label" = "内置";
+"SoundsView.resetSound.label" = "重置";
