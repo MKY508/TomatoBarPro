@@ -25,9 +25,3 @@
 "TBTimer.onRestStart.skip.title" = "Skip";
 "TBTimer.onRestFinish.title" = "Break is over";
 "TBTimer.onRestFinish.body" = "Keep up the good work!";
-"TBPopoverView.pause.label" = "Pause";
-"TBPopoverView.resume.label" = "Resume";
-"TBPopoverView.skipRest.label" = "Skip Rest";
-"SettingsView.countUpTimer.label" = "Count up";
-"SoundsView.builtIn.label" = "Built-in";
-"SoundsView.resetSound.label" = "Reset";

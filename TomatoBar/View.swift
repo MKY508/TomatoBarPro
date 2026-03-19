@@ -1,7 +1,6 @@
 import KeyboardShortcuts
 import LaunchAtLogin
 import SwiftUI
-import UniformTypeIdentifiers
 
 extension KeyboardShortcuts.Name {
     static let startStopTimer = Self("startStopTimer")
@@ -76,14 +75,9 @@ private struct SettingsView: View {
                                        comment: "Show timer in menu bar label"))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }.toggleStyle(.switch)
-                .onChange(of: timer.showTimerInMenuBar) {
+                .onChange(of: timer.showTimerInMenuBar) { _ in
                     timer.updateTimeLeft()
                 }
-            Toggle(isOn: $timer.countUpTimer) {
-                Text(NSLocalizedString("SettingsView.countUpTimer.label",
-                                       comment: "Count up timer label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch)
             Toggle(isOn: $launchAtLogin.isEnabled) {
                 Text(NSLocalizedString("SettingsView.launchAtLogin.label",
                                        comment: "Launch at login label"))
@@ -107,83 +101,26 @@ private struct VolumeSlider: View {
     }
 }
 
-private struct SoundRow: View {
-    let label: String
-    @Binding var volume: Double
-    let customName: String?
-    let onPickFile: () -> Void
-    let onReset: () -> Void
-
-    var body: some View {
-        Text(label)
-        HStack(spacing: 4) {
-            VolumeSlider(volume: $volume)
-            Button(action: onPickFile) {
-                Image(systemName: "folder")
-            }
-            .buttonStyle(.borderless)
-            .help(customName ?? NSLocalizedString("SoundsView.builtIn.label", comment: "Built-in"))
-        }
-        if customName != nil {
-            Text("")
-            HStack {
-                Text(customName!)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                Spacer()
-                Button(NSLocalizedString("SoundsView.resetSound.label", comment: "Reset"),
-                       action: onReset)
-                    .font(.caption)
-                    .buttonStyle(.borderless)
-            }
-        }
-    }
-}
-
 private struct SoundsView: View {
     @EnvironmentObject var player: TBPlayer
-    @State private var activeSlot: TBSoundSlot?
 
     private var columns = [
         GridItem(.flexible()),
-        GridItem(.fixed(130))
+        GridItem(.fixed(110))
     ]
 
     var body: some View {
         LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
-            SoundRow(label: NSLocalizedString("SoundsView.isWindupEnabled.label",
-                                              comment: "Windup label"),
-                     volume: $player.windupVolume,
-                     customName: player.customWindupName,
-                     onPickFile: { activeSlot = .windup },
-                     onReset: { player.resetSound(for: .windup) })
-            SoundRow(label: NSLocalizedString("SoundsView.isDingEnabled.label",
-                                              comment: "Ding label"),
-                     volume: $player.dingVolume,
-                     customName: player.customDingName,
-                     onPickFile: { activeSlot = .ding },
-                     onReset: { player.resetSound(for: .ding) })
-            SoundRow(label: NSLocalizedString("SoundsView.isTickingEnabled.label",
-                                              comment: "Ticking label"),
-                     volume: $player.tickingVolume,
-                     customName: player.customTickingName,
-                     onPickFile: { activeSlot = .ticking },
-                     onReset: { player.resetSound(for: .ticking) })
-        }
-        .padding(4)
-        .fileImporter(
-            isPresented: Binding(
-                get: { activeSlot != nil },
-                set: { if !$0 { activeSlot = nil } }
-            ),
-            allowedContentTypes: [.audio]
-        ) { result in
-            if case .success(let url) = result, let slot = activeSlot {
-                player.setCustomSound(for: slot, url: url)
-            }
-            activeSlot = nil
-        }
+            Text(NSLocalizedString("SoundsView.isWindupEnabled.label",
+                                   comment: "Windup label"))
+            VolumeSlider(volume: $player.windupVolume)
+            Text(NSLocalizedString("SoundsView.isDingEnabled.label",
+                                   comment: "Ding label"))
+            VolumeSlider(volume: $player.dingVolume)
+            Text(NSLocalizedString("SoundsView.isTickingEnabled.label",
+                                   comment: "Ticking label"))
+            VolumeSlider(volume: $player.tickingVolume)
+        }.padding(4)
         Spacer().frame(minHeight: 0)
     }
 }
@@ -193,7 +130,7 @@ private enum ChildView {
 }
 
 struct TBPopoverView: View {
-    @EnvironmentObject var timer: TBTimer
+    @ObservedObject var timer = TBTimer()
     @State private var buttonHovered = false
     @State private var activeChildView = ChildView.intervals
 
@@ -204,10 +141,16 @@ struct TBPopoverView: View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
                 timer.startStop()
+                TBStatusItem.shared.closePopover(nil)
             } label: {
-                Text(timer.isRunning ?
+                Text(timer.timer != nil ?
                      (buttonHovered ? stopLabel : timer.timeLeftString) :
                         startLabel)
+                    /*
+                      When appearance is set to "Dark" and accent color is set to "Graphite"
+                      "defaultAction" button label's color is set to the same color as the
+                      button, making the button look blank. #24
+                     */
                     .foregroundColor(Color.white)
                     .font(.system(.body).monospacedDigit())
                     .frame(maxWidth: .infinity)
@@ -217,28 +160,6 @@ struct TBPopoverView: View {
             }
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
-
-            if timer.isRunning {
-                Button {
-                    timer.pauseResume()
-                } label: {
-                    Text(timer.isPaused ?
-                         NSLocalizedString("TBPopoverView.resume.label", comment: "Resume label") :
-                         NSLocalizedString("TBPopoverView.pause.label", comment: "Pause label"))
-                        .frame(maxWidth: .infinity)
-                }
-                .controlSize(.large)
-            }
-
-            if timer.isResting {
-                Button {
-                    timer.skipRest()
-                } label: {
-                    Text(NSLocalizedString("TBPopoverView.skipRest.label", comment: "Skip rest label"))
-                        .frame(maxWidth: .infinity)
-                }
-                .controlSize(.large)
-            }
 
             Picker("", selection: $activeChildView) {
                 Text(NSLocalizedString("TBPopoverView.intervals.label",
@@ -271,7 +192,7 @@ struct TBPopoverView: View {
                     Text(NSLocalizedString("TBPopoverView.about.label",
                                            comment: "About label"))
                     Spacer()
-                    Text("\u{2318} A").foregroundColor(Color.gray)
+                    Text("⌘ A").foregroundColor(Color.gray)
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut("a")
@@ -281,13 +202,35 @@ struct TBPopoverView: View {
                     Text(NSLocalizedString("TBPopoverView.quit.label",
                                            comment: "Quit label"))
                     Spacer()
-                    Text("\u{2318} Q").foregroundColor(Color.gray)
+                    Text("⌘ Q").foregroundColor(Color.gray)
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut("q")
             }
         }
-        .padding(12)
-        .frame(width: 240)
+        #if DEBUG
+            /*
+             After several hours of Googling and trying various StackOverflow
+             recipes I still haven't figured a reliable way to auto resize
+             popover to fit all it's contents (pull requests are welcome!).
+             The following code block is used to determine the optimal
+             geometry of the popover.
+             */
+            .overlay(
+                GeometryReader { proxy in
+                    debugSize(proxy: proxy)
+                }
+            )
+        #endif
+            /* Use values from GeometryReader */
+//            .frame(width: 240, height: 276)
+            .padding(12)
     }
 }
+
+#if DEBUG
+    func debugSize(proxy: GeometryProxy) -> some View {
+        print("Optimal popover size:", proxy.size)
+        return Color.clear
+    }
+#endif
